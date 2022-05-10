@@ -53,23 +53,25 @@ def fft(data):
         return np.concatenate([data_parzyste + t[:int(n/2)] * data_nieparzyste,
                                data_parzyste + t[int(n/2):] * data_nieparzyste])
 
-def fourier_transformation_on_frame(data, samplerate):
-    return np.fft.rfftfreq(len(data), 1/samplerate), np.abs(np.fft.rfft(data))
+def idenntity(x):
+    return [1 for i in range(x)]
 
-def fourier_transformation_of_time(filename, imie):
+
+def fourier_transformation(filename, imie,window_function=idenntity):
+
     samplerate, data =  read_wav(filename, imie)
 
     data_1=[]
     f=[]
 
     for i in data:
-        data_1.append(np.abs(np.fft.rfft(i)))
+        data_1.append(np.abs(np.fft.rfft(i*window_function(len(i)))))
         f.append(np.fft.rfftfreq(len(i), 1/samplerate))
 
     return f, data_1, samplerate
 
 def BW(filename, imie):
-    f, data, samplerate = fourier_transformation_of_time(filename, imie)
+    f, data, samplerate = fourier_transformation(filename, imie)
     fc = FC(filename, imie)
     bw = []
     for f1, d, fc1 in zip(f, data, fc):
@@ -79,7 +81,7 @@ def BW(filename, imie):
 
 
 def FC(filename,imie):
-    f,data,samplerate=fourier_transformation_of_time(filename, imie)
+    f,data,samplerate=fourier_transformation(filename, imie)
     fc=[]
     for f1,d in zip(f,data):
         fc.append(sum(f1*d)/sum(d))
@@ -87,12 +89,11 @@ def FC(filename,imie):
     return fc
 
 def BE(filename, imie, f0, f1):
-    samplerate, data =  read_wav(filename, imie)
+    f,data,samplerate=fourier_transformation(filename, imie)
     be = []
 
-    for frame in data:
-        f, d = fourier_transformation_on_frame(frame, samplerate)
-        ind = [idx for idx, element in enumerate(f) if element <= f1 and element >= f0]
+    for fi,d in zip(f,data):
+        ind = [idx for idx, element in enumerate(fi) if element <= f1 and element >= f0]
         d_tmp = [d[i] for i in ind]
         s = 0
         for el in d_tmp:
@@ -106,20 +107,6 @@ def BER(filename, imie, f0, f1):
 
     return [el1 / el2 for el1, el2 in zip(be, volume)]
 
-def fourier_transformation(filename, imie, window_function):
-    samplerate, data =  read_wav(filename, imie)
-
-    data_1=[]
-    f=[]
-
-    for i in data:
-        data_1.append(np.abs(np.fft.rfft(i))*window_function(len(i)))
-        f.append(np.fft.rfftfreq(len(i), 1/samplerate))
-
-    return f,data_1,samplerate
-
-def identity(x):
-    return [1 for i in range(x)]
 
 def hamming(x):
     return np.hamming(x)
@@ -129,14 +116,14 @@ def hanning(x):
 
 def spectral_flatness_measure(filename,imie):
     measure=[]
-    f,data,samplerate=fourier_transformation_of_time(filename, imie)
+    f,data,samplerate=fourier_transformation(filename, imie)
     for d1 in data:
         measure.append(len(d1)*math.prod(d1)/((1/len(d1) * sum(np.power(d1,2)))))
     return measure
 
 def spectral_crest_factor(filename,imie):
     factor=[]
-    f,data,samplerate=fourier_transformation_of_time(filename, imie)
+    f,data,samplerate=fourier_transformation(filename, imie)
     for d1 in data:
         l = max(np.power(d1,2))
         m = 1/len(d1) * sum(d1)
@@ -306,3 +293,6 @@ def high_zero_crossing_rate_ratio(filename, imie):
             output += abs(np.sign(zcrs[i] - 1.5 * avg_zcr) + 1)
 
     return output / (2 * len(zcrs))
+
+
+print(fourier_transformation("gyr.wav", "Maciej"))
