@@ -1,14 +1,23 @@
 import os
 
 from scipy.io import wavfile
-from sound_functions import *
-
 import numpy as np
 
-samplerate, data =  read_wav('gyr.wav', 'Maciej')
-samplerate, data = read_wav_clip('gyr.wav', 'Maciej')
+from sound_functions import *
 
-v = volume('OSR_us_000_0010_8k.wav', 'Maciej')
-z = zero_crossing_rate('zdanie.wav', 'Maciej')
-index_min_v = v.index(min(v))
-print(data)
+
+
+print(volume2('abe.wav', 'Maciej'))
+print(fft(np.sin(2 * np.pi * np.arange(512) * 1000 / 10)))
+
+widmo_faz = np.abs(data[0])
+
+print(widmo_faz)
+f = np.fft.rfftfreq(len(widmo_faz), LEN_OF_FRAME)
+
+print(f)
+plt.plot(widmo_faz)
+plt.xlabel('częstotliwość [Hz]')
+plt.ylabel('faza [rad]')
+plt.title('Widmo fazowe sygnału sinusoidalnego')
+plt.show()

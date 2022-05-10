@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 from conf import *
 
-
 ### Frame level functions
 def read_wav(filename, imie):
     if imie == 'Maciej':
@@ -26,6 +25,126 @@ def read_wav_clip(filename, imie):
     samplerate, data = read_wav(filename, imie)
     return samplerate, flatten(data)
 
+def volume2(filename, imie):
+    f, data, samplerate = fourier_transformation_of_time(filename, imie)
+    volume = []
+    for d in data:
+        v = 0
+        for el in d:
+            v += el ** 2
+        volume.append(v / len(d))
+
+    return volume
+
+### napisaliśmy fft, jednak będziemy korzystali z gotowej biblioteki
+def fft(data):
+    n = data.shape[0]
+    if n % 2 != 0:
+        raise ValueError("nie jest potegi 2")
+    elif n <= 2:
+        data = np.asarray(data, dtype=float)
+        n = len(data)
+        M = np.exp(-2j * np.pi * np.arange(n).reshape((n, 1)) * np.arange(n) / n)
+        return np.dot(M, data)
+    else:
+        data_parzyste = fft(data[::2])
+        data_nieparzyste = fft(data[1::2])
+        t = np.exp(-2j* np.pi * np.arange(n) / n)
+        return np.concatenate([data_parzyste + t[:int(n/2)] * data_nieparzyste,
+                               data_parzyste + t[int(n/2):] * data_nieparzyste])
+
+def fourier_transformation_on_frame(data, samplerate):
+    return np.fft.rfftfreq(len(data), 1/samplerate), np.abs(np.fft.rfft(data))
+
+def fourier_transformation_of_time(filename, imie):
+    samplerate, data =  read_wav(filename, imie)
+
+    data_1=[]
+    f=[]
+
+    for i in data:
+        data_1.append(np.abs(np.fft.rfft(i)))
+        f.append(np.fft.rfftfreq(len(i), 1/samplerate))
+
+    return f, data_1, samplerate
+
+def BW(filename, imie):
+    f, data, samplerate = fourier_transformation_of_time(filename, imie)
+    fc = FC(filename, imie)
+    bw = []
+    for f1, d, fc1 in zip(f, data, fc):
+        bw.append(sum((d ** 2) * ((f1 - fc1) ** 2))/sum(d ** 2))
+
+    return np.sqrt(bw)
+
+
+def FC(filename,imie):
+    f,data,samplerate=fourier_transformation_of_time(filename, imie)
+    fc=[]
+    for f1,d in zip(f,data):
+        fc.append(sum(f1*d)/sum(d))
+
+    return fc
+
+def BE(filename, imie, f0, f1):
+    samplerate, data =  read_wav(filename, imie)
+    be = []
+
+    for frame in data:
+        f, d = fourier_transformation_on_frame(frame, samplerate)
+        ind = [idx for idx, element in enumerate(f) if element <= f1 and element >= f0]
+        d_tmp = [d[i] for i in ind]
+        s = 0
+        for el in d_tmp:
+            s += el ** 2
+        be.append(s / len(d_tmp))
+    return be
+
+def BER(filename, imie, f0, f1):
+    be = BE(filename, imie, f0, f1)
+    volume = volume2(filename, imie)
+
+    return [el1 / el2 for el1, el2 in zip(be, volume)]
+
+def fourier_transformation(filename, imie, window_function):
+    samplerate, data =  read_wav(filename, imie)
+
+    data_1=[]
+    f=[]
+
+    for i in data:
+        data_1.append(np.abs(np.fft.rfft(i))*window_function(len(i)))
+        f.append(np.fft.rfftfreq(len(i), 1/samplerate))
+
+    return f,data_1,samplerate
+
+def identity(x):
+    return [1 for i in range(x)]
+
+def hamming(x):
+    return np.hamming(x)
+
+def hanning(x):
+    return np.hanning(x)
+
+def spectral_flatness_measure(filename,imie):
+    measure=[]
+    f,data,samplerate=fourier_transformation_of_time(filename, imie)
+    for d1 in data:
+        measure.append(len(d1)*math.prod(d1)/((1/len(d1) * sum(np.power(d1,2)))))
+    return measure
+
+def spectral_crest_factor(filename,imie):
+    factor=[]
+    f,data,samplerate=fourier_transformation_of_time(filename, imie)
+    for d1 in data:
+        l = max(np.power(d1,2))
+        m = 1/len(d1) * sum(d1)
+        factor.append(l/m)
+    return factor
+
+### in time
+
 def volume(filename, imie):
     _, data = read_wav(filename, imie)
     output = []
@@ -35,16 +154,6 @@ def volume(filename, imie):
             volume += float(sample) ** 2
         output.append(math.sqrt(volume / len(frame)))
     return [(el - min(output)) / (max(output) - min(output)) for el in output]
-
-
-def energy_data(data):
-    output = 0
-    for el in data:
-        output += float(el) ** 2
-    return output
-
-def short_time_energy(filename, imie):
-    return [el ** 2 for el in volume(filename, imie)]
 
 def zero_crossing_rate(filename, imie):
     samplerate, data = read_wav(filename, imie)
