@@ -99,12 +99,23 @@ class PlotMenu(QWidget):
 
         self.plot()
         self.features()
+        self.frequency_plot()
 
         self.layout.addWidget(self.tabs)
 
         self.setWindowTitle('Analiza dźwięku')
         self.setWindowIcon(QIcon('./pngs/analyze-sound-wave.png'))
         self.show()
+
+    def frequency_plot(self):
+
+        self.main_frequency_plot = QWidget()
+        self.main_frequency_plot_layout = QGridLayout()
+
+        self.main_frequency_plot_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'BE'), 0, 0)
+        self.main_frequency_plot.setLayout(self.main_frequency_plot_layout)
+
+        self.tabs.addTab(self.main_frequency_plot, 'Frequency plot')
 
     def plot(self):
 
@@ -388,6 +399,9 @@ class PlotMenu(QWidget):
         if feature_name == 'SCF':
             y = spectral_crest_factor(filename, self.imie)
             plot_label.setText('Spectral Crest Factor')
+        if feature_name == 'Frequenct plot':
+            y = spectral_crest_factor(filename, self.imie)
+            plot_label.setText('Frequency plot')
 
         plot_label.setAlignment(QtCore.Qt.AlignCenter)
         plot_label.setFont(QFont('Arial', 12, weight=100))
