@@ -467,9 +467,9 @@ class PlotMenu(QWidget):
         time = np.linspace(0, length, len(data))
         sc = MplCanvas(self, width=5, height=4, dpi=100)
 
-        pomoc0 = copy(time)
-        pomoc05 = copy(time)
-        pomoc1= copy(time)
+        pomoc0 = copy.copy(time)
+        pomoc05 = copy.copy(time)
+        pomoc1= copy.copy(time)
 
         x = self.color_silence(filename, self.imie)
 

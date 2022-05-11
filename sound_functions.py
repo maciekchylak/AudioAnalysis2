@@ -1,6 +1,7 @@
 ### There will be defined all sound functions
 import statistics
 import math
+import copy
 
 import numpy as np
 from scipy.io import wavfile
@@ -22,10 +23,11 @@ def read_wav(filename, imie, window = identity):
     else:
         return None
 
+    data_copy = copy.deepcopy(data_dict[key_dict])
     for i in range(len(data_dict[key_dict])):
-         data_dict[key_dict][i] *= window(len(data_dict[key_dict][i]))
+         data_copy[i] *= window(len(data_copy[i]))
 
-    return samplerate_dict[key_dict], data_dict[key_dict]
+    return samplerate_dict[key_dict], data_copy
 
 def read_wav_clip(filename, imie, window = identity):
     samplerate, data = read_wav(filename, imie, window = window)
