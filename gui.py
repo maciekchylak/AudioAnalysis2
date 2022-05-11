@@ -5,6 +5,9 @@ import sys
 from tkinter.font import BOLD
 import unicodedata
 
+
+from scipy import signal
+from scipy.fft import fftshift
 import matplotlib
 matplotlib.use('Qt5Agg')
 from PyQt5 import QtCore, QtWidgets
@@ -16,9 +19,9 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from matplotlib.figure import Figure
 from matplotlib.collections import LineCollection
 
-
 from sound_functions import *
 from conf import *
+
 
 class MainMenu(QWidget):
     def __init__(self, parent = None):
@@ -100,6 +103,7 @@ class PlotMenu(QWidget):
         self.plot()
         self.features()
         self.frequency_plot()
+        #self.spectrogram()
 
         self.layout.addWidget(self.tabs)
 
@@ -112,10 +116,68 @@ class PlotMenu(QWidget):
         self.main_frequency_plot = QWidget()
         self.main_frequency_plot_layout = QGridLayout()
 
-        self.main_frequency_plot_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'BE'), 0, 0)
+        self.choose_window = QComboBox()
+        self.choose_window.addItems(['rectangle', 'hamming', 'hanning'])
+
+        self.choose_window.activated.connect(self.generate_plots_statistics)
+
+        _, data = read_wav(self.choose_file.currentText(), self.imie, window = identity)
+
+        self.slider_widget2 = QWidget()
+        self.slider_layer2 = QGridLayout()
+
+        self.slider_length = QSlider(Qt.Horizontal)
+        self.slider_length.setMinimum(1)
+        self.slider_length.setMaximum(len(data))
+        self.slider_length.setValue(1)
+        self.slider_length.setTickInterval(1)
+        self.slider_length.setTickPosition(QSlider.TicksBelow)
+
+        self.slider_length.valueChanged.connect(self.generate_plots_statistics)
+        self.slider_length.valueChanged.connect(self.updateLabel_length)
+
+        self.slider_length_l = QLabel('1', self)
+        self.slider_length_l.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+
+        self.slider_length_label = QLabel('Wybór ramki dla której chcemy wybrać')
+        self.slider_length_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+
+        self.slider_layer2.addWidget(self.slider_length_label, 0, 0)
+        self.slider_layer2.addWidget(self.slider_length, 1, 0)
+        self.slider_layer2.addWidget(self.slider_length_l, 2, 0)
+
+        self.slider_widget2.setLayout(self.slider_layer2)
+
+        self.frequency_plot_generate()
+
+        self.main_frequency_plot_layout.addWidget(self.slider_widget2, 1, 0)
+        self.main_frequency_plot_layout.addWidget(self.choose_window, 1, 1)
+
+
         self.main_frequency_plot.setLayout(self.main_frequency_plot_layout)
 
         self.tabs.addTab(self.main_frequency_plot, 'Frequency plot')
+
+    def spectrogram(self):
+
+        self.main_frequency_plot3 = QWidget()
+        self.main_frequency_plot_layout3 = QGridLayout()
+
+        self.choose_window3 = QComboBox()
+        self.choose_window3.addItems(['rectangle', 'hamming', 'hanning'])
+
+        self.choose_window3.activated.connect(self.generate_plots_statistics)
+
+        _, data = read_wav(self.choose_file.currentText(), self.imie, window = identity)
+
+
+        self.spectrogram_plot_generate()
+
+        self.main_frequency_plot_layout3.addWidget(self.choose_window3, 1, 0)
+
+        self.main_frequency_plot3.setLayout(self.main_frequency_plot_layout3)
+
+        self.tabs.addTab(self.main_frequency_plot3, 'Spectogram')
 
     def plot(self):
 
@@ -197,7 +259,6 @@ class PlotMenu(QWidget):
         self.back_layout.addWidget(self.music_play)
         self.back_layout.addWidget(self.volume_down)
 
-
         self.back_layout.addWidget(button_back)
 
         self.main_plot_layout.addLayout(self.back_layout, 1, 0)
@@ -210,6 +271,12 @@ class PlotMenu(QWidget):
 
     def updateLabel_width(self, value):
         self.slider_width_l.setText(str(value))
+
+    def updateLabel_length(self, value):
+        self.slider_length_l.setText(str(value))
+
+    def updateLabel_length3(self, value):
+        self.slider_length_l3.setText(str(value))
 
     def volume_up(self):
         current_volume = self.player.volume()
@@ -244,6 +311,49 @@ class PlotMenu(QWidget):
         self.plot_toolbar_widget.setLayout(self.plot_toolbar_layout)
 
         self.main_plot_layout.addWidget(self.plot_toolbar_widget, 0, 0)
+
+    def frequency_plot_generate(self):
+        self.plot_frequency_widget = QWidget()
+        self.plot_frequency_layout = QGridLayout()
+        self.plot_frequency_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'Frequency plot'), 0, 0)
+
+        self.plot_frequency_widget.setLayout(self.plot_frequency_layout)
+
+        self.main_frequency_plot_layout.addWidget(self.plot_frequency_widget, 0, 0)
+
+    # def spectrogram_plot_generate(self):
+    #     self.plot_frequency_widget3 = QWidget()
+    #     self.plot_frequency_layout3 = QGridLayout()
+
+    #     window = self.choose_window3.currentText()
+    #     if window == 'hamming':
+    #         window_f = hamming
+    #     elif window == 'hanning':
+    #         window_f = hanning
+    #     elif window == 'rectangle':
+    #         window_f = identity
+
+    #     samplerate, data = read_wav(self.choose_file.currentText(), self.imie, window = window_f)
+    #     f, t, Sxx = signal.spectrogram(np.asarray(data[:-1]), samplerate)
+
+    #     sc = MplCanvas(self, width=2, height=3, dpi=100)
+    #     sc.canvas
+    #     sc.axes.plot(t, f)
+
+    #     toolbar = NavigationToolbar(sc, self)
+
+    #     plot_toolbar_widget3 = QWidget()
+    #     plot_toolbar_layout3 = QGridLayout()
+
+    #     plot_toolbar_layout3.addWidget(toolbar, 1, 0)
+    #     plot_toolbar_layout3.addWidget(sc, 2, 0)
+    #     plot_toolbar_widget3.setLayout(plot_toolbar_layout3)
+
+    #     self.plot_frequency_layout3.addWidget(plot_toolbar_widget3, 0, 0)
+
+    #     self.plot_frequency_widget3.setLayout(self.plot_frequency_layout3)
+
+    #     self.main_frequency_plot_layout3.addWidget(self.plot_frequency_widget3, 0, 0)
 
     def features(self):
 
@@ -334,8 +444,8 @@ class PlotMenu(QWidget):
         self.main_features_layout.removeWidget(self.frame)
         self.frame_statistics()
 
-        #self.main_features_layout.removeWidget(self.clip)
-        #self.clip_statistics()
+        self.main_frequency_plot_layout.removeWidget(self.plot_frequency_widget)
+        self.frequency_plot_generate()
 
 
     def waveform(self, filename):
@@ -394,19 +504,30 @@ class PlotMenu(QWidget):
             y = BER(filename, self.imie, 10, 200)
             plot_label.setText('Band Energy Ratio')
         if feature_name == 'SFM':
-            y = spectral_flatness_measure(filename, self.imie)
+            min = int(self.slider_min_l.text())
+            width = int(self.slider_width_l.text())
+            y = spectral_flatness_measure(filename, self.imie, min, min + width)
             plot_label.setText('Spectral Flatness Measure')
         if feature_name == 'SCF':
-            y = spectral_crest_factor(filename, self.imie)
+            min = int(self.slider_min_l.text())
+            width = int(self.slider_width_l.text())
+            y = spectral_crest_factor(filename, self.imie, min, min + width)
             plot_label.setText('Spectral Crest Factor')
-        if feature_name == 'Frequenct plot':
-            y = spectral_crest_factor(filename, self.imie)
+        if feature_name == 'Frequency plot':
+            window = self.choose_window.currentText()
+            if window == 'hamming':
+                window_f = hamming
+            elif window == 'hanning':
+                window_f = hanning
+            elif window == 'rectangle':
+                window_f = identity
+            f, data, samplerate  = fourier_transformation(filename, self.imie, window_f)
+            time = f[int(self.slider_length_l.text())]
+            y = data[int(self.slider_length_l.text())]
             plot_label.setText('Frequency plot')
+        if feature_name != 'Frequency plot':
+            time = np.linspace(1, len(y), len(y))
 
-        plot_label.setAlignment(QtCore.Qt.AlignCenter)
-        plot_label.setFont(QFont('Arial', 12, weight=100))
-
-        time = np.linspace(1, len(y), len(y))
         sc = MplCanvas(self, width=2, height=3, dpi=100)
 
         sc.axes.plot(time, y)
@@ -416,7 +537,11 @@ class PlotMenu(QWidget):
         plot_toolbar_widget = QWidget()
         plot_toolbar_layout = QGridLayout()
 
-        plot_toolbar_layout.addWidget(plot_label, 0, 0)
+        if feature_name != 'Frequency plot':
+            plot_label.setAlignment(QtCore.Qt.AlignCenter)
+            plot_label.setFont(QFont('Arial', 12, weight=100))
+            plot_toolbar_layout.addWidget(plot_label, 0, 0)
+
         plot_toolbar_layout.addWidget(toolbar, 1, 0)
         plot_toolbar_layout.addWidget(sc, 2, 0)
         plot_toolbar_widget.setLayout(plot_toolbar_layout)

@@ -9,7 +9,10 @@ import matplotlib.pyplot as plt
 from conf import *
 
 ### Frame level functions
-def read_wav(filename, imie):
+def identity(x):
+    return [1 for i in range(x)]
+
+def read_wav(filename, imie, window = identity):
     if imie == 'Maciej':
         key_dict = 'Maciej_' + filename
     elif imie == 'Dawid':
@@ -19,10 +22,13 @@ def read_wav(filename, imie):
     else:
         return None
 
+    for i in range(len(data_dict[key_dict])):
+         data_dict[key_dict][i] *= window(len(data_dict[key_dict][i]))
+
     return samplerate_dict[key_dict], data_dict[key_dict]
 
-def read_wav_clip(filename, imie):
-    samplerate, data = read_wav(filename, imie)
+def read_wav_clip(filename, imie, window = identity):
+    samplerate, data = read_wav(filename, imie, window = window)
     return samplerate, flatten(data)
 
 def volume2(filename, imie):
@@ -90,22 +96,18 @@ def BER(filename, imie, f0, f1):
 
     return [el1 / el2 for el1, el2 in zip(be, volume)]
 
-def identity(x):
-    return [1 for i in range(x)]
 
-def fourier_transformation(filename, imie, window_function=identity):
-    samplerate, data =  read_wav(filename, imie)
+def fourier_transformation(filename, imie, window = identity):
+    samplerate, data =  read_wav(filename, imie, window)
 
     data_1=[]
     f=[]
 
     for i in data:
-        data_1.append(np.abs(np.fft.rfft(i * window_function(len(i)))))
+        data_1.append(np.abs(np.fft.rfft(i)))
         f.append(np.fft.rfftfreq(len(i), 1/samplerate))
 
-    return f,data_1,samplerate
-
-
+    return f, data_1, samplerate
 
 def hamming(x):
     return np.hamming(x)
@@ -113,19 +115,23 @@ def hamming(x):
 def hanning(x):
     return np.hanning(x)
 
-def spectral_flatness_measure(filename,imie):
+def spectral_flatness_measure(filename,imie,f0,f1):
     measure=[]
     f,data,samplerate=fourier_transformation(filename, imie)
-    for d1 in data:
-        measure.append(len(d1)*math.prod(d1)/((1/len(d1) * sum(np.power(d1,2)))))
+
+    for f2,d1 in zip(f,data):
+        ind = [idx for idx, element in enumerate(f2) if element <= f1 and element >= f0]
+        measure.append(math.prod(np.power(d1[min(ind):max(ind)+1],1/((max(ind)-min(ind)+1)/2)))/((1/(max(ind)-min(ind)+1) * sum(np.power(d1[min(ind):max(ind)+1],2)))))
     return measure
 
-def spectral_crest_factor(filename,imie):
+def spectral_crest_factor(filename,imie,f0,f1):
     factor=[]
     f,data,samplerate=fourier_transformation(filename, imie)
-    for d1 in data:
-        l = max(np.power(d1,2))
-        m = 1/len(d1) * sum(d1)
+
+    for f2,d1 in zip(f,data):
+        ind = [idx for idx, element in enumerate(f2) if element <= f1 and element >= f0]
+        l = max(np.power(d1[min(ind):max(ind)+1],2))
+        m = 1/(max(ind)-min(ind)+1) * sum(np.power(d1[min(ind):max(ind)+1],2))
         factor.append(l/m)
     return factor
 
