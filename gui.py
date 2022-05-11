@@ -10,7 +10,7 @@ matplotlib.use('Qt5Agg')
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import QUrl, QFileInfo
+from PyQt5.QtCore import QUrl, QFileInfo, Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -35,6 +35,7 @@ class MainMenu(QWidget):
         info_button = QLabel('Kliknij imię osoby, której nagrania chcesz przeanalizować', self)
         info_button.setFont(QFont('Arial', 15))
         info_button.setAlignment(QtCore.Qt.AlignCenter)
+
 
         button_maciej = QPushButton('Maciej', self)
         button_maciej.setFont(QFont('Arial', 10))
@@ -122,6 +123,54 @@ class PlotMenu(QWidget):
 
         self.choose_file.activated.connect(self.generate_plots_statistics)
 
+
+        self.slider_widget = QWidget()
+        self.slider_layer = QGridLayout()
+
+        self.slider_min = QSlider(Qt.Horizontal)
+        self.slider_min.setMinimum(10)
+        self.slider_min.setMaximum(3000)
+        self.slider_min.setValue(100)
+        self.slider_min.setTickInterval(50)
+        self.slider_min.setTickPosition(QSlider.TicksBelow)
+
+        self.slider_width = QSlider(Qt.Horizontal)
+        self.slider_width.setMinimum(10)
+        self.slider_width.setMaximum(3000)
+        self.slider_width.setValue(100)
+        self.slider_width.setTickInterval(50)
+        self.slider_width.setTickPosition(QSlider.TicksBelow)
+
+        self.slider_min.valueChanged.connect(self.generate_plots_statistics)
+        self.slider_width.valueChanged.connect(self.generate_plots_statistics)
+        self.slider_min.valueChanged.connect(self.updateLabel_min)
+        self.slider_width.valueChanged.connect(self.updateLabel_width)
+
+
+        self.slider_min_l = QLabel('100', self)
+        self.slider_min_l.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+
+        self.slider_width_l = QLabel('100', self)
+        self.slider_width_l.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+
+        self.slider_min_label = QLabel('Ustawienie f0 dla Band Energy')
+        self.slider_min_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+
+        self.slider_width_label = QLabel('Ustawienie długości przedziału dla Band Energy')
+        self.slider_width_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+
+
+        self.slider_layer.addWidget(self.slider_min_label, 0, 0)
+        self.slider_layer.addWidget(self.slider_width_label, 0, 1)
+
+        self.slider_layer.addWidget(self.slider_min, 1, 0)
+        self.slider_layer.addWidget(self.slider_width, 1, 1)
+
+        self.slider_layer.addWidget(self.slider_min_l, 2, 0)
+        self.slider_layer.addWidget(self.slider_width_l, 2, 1)
+
+        self.slider_widget.setLayout(self.slider_layer)
+
         button_back = QPushButton('Back', self)
         button_back.clicked.connect(self.go_back)
         self.back_layout = QHBoxLayout()
@@ -132,17 +181,24 @@ class PlotMenu(QWidget):
         self.player = QMediaPlayer()
 
         self.back_layout.addWidget(self.choose_file)
-        self.back_layout.addStretch(1)
+        self.back_layout.addWidget(self.slider_widget)
         self.back_layout.addWidget(self.volume_up)
         self.back_layout.addWidget(self.music_play)
         self.back_layout.addWidget(self.volume_down)
-        self.back_layout.addStretch(2)
+
+
         self.back_layout.addWidget(button_back)
 
         self.main_plot_layout.addLayout(self.back_layout, 1, 0)
 
         self.main_plot.setLayout(self.main_plot_layout)
         self.tabs.addTab(self.main_plot, 'Waveform')
+
+    def updateLabel_min(self, value):
+        self.slider_min_l.setText(str(value))
+
+    def updateLabel_width(self, value):
+        self.slider_width_l.setText(str(value))
 
     def volume_up(self):
         current_volume = self.player.volume()
@@ -189,7 +245,7 @@ class PlotMenu(QWidget):
 
         self.frame_statistics()
         self.main_features_layout.addWidget(line, 1, 0)
-        self.clip_statistics()
+        #self.clip_statistics()
 
         self.main_features.setLayout(self.main_features_layout)
         self.tabs.addTab(self.main_features, 'Features')
@@ -205,9 +261,12 @@ class PlotMenu(QWidget):
 
         self.frame_layout.addWidget(frame_title, 0, 0, 1, 0)
         self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'Volume'), 1, 0)
-        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'STE'), 1, 1)
-        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'ZCR'), 2, 0)
-        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'FF'), 2, 1)
+        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'BW'), 1, 1)
+        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'FC'), 2, 0)
+        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'BE'), 2, 1)
+        #self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'BER'), 3, 0)
+        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'SFM'), 3, 0)
+        self.frame_layout.addWidget(self.plot_of_feature(self.choose_file.currentText(), 'SCF'), 3, 1)
         self.frame.setLayout(self.frame_layout)
 
         self.main_features_layout.addWidget(self.frame, 0, 0)
@@ -264,8 +323,8 @@ class PlotMenu(QWidget):
         self.main_features_layout.removeWidget(self.frame)
         self.frame_statistics()
 
-        self.main_features_layout.removeWidget(self.clip)
-        self.clip_statistics()
+        #self.main_features_layout.removeWidget(self.clip)
+        #self.clip_statistics()
 
 
     def waveform(self, filename):
@@ -307,29 +366,38 @@ class PlotMenu(QWidget):
 
         plot_label = QLabel()
         if feature_name == 'Volume':
-            y = volume(filename, self.imie)
-            plot_label.setText('Volume / number of frame')
-        if feature_name == 'STE':
-            y = short_time_energy(filename, self.imie)
-            plot_label.setText('STE / number of frame')
-        if feature_name == 'ZCR':
-            y = zero_crossing_rate(filename, self.imie)
-            plot_label.setText('ZCR / number of frame')
-        if feature_name == 'FF':
-            y = fundemental_frequency(filename, self.imie)
-            plot_label.setText('Fundamental Frequency / number of frame')
+            y = volume2(filename, self.imie)
+            plot_label.setText('Volume')
+        if feature_name == 'BW':
+            y = BW(filename, self.imie)
+            plot_label.setText('Bandwidth')
+        if feature_name == 'FC':
+            y =  FC(filename, self.imie)
+            plot_label.setText('Frequency Centroid')
+        if feature_name == 'BE':
+            min = int(self.slider_min_l.text())
+            width = int(self.slider_width_l.text())
+            y = BE(filename, self.imie, min, min + width)
+            plot_label.setText('Band Energy')
+        if feature_name == 'BER':
+            y = BER(filename, self.imie, 10, 200)
+            plot_label.setText('Band Energy Ratio')
+        if feature_name == 'SFM':
+            y = spectral_flatness_measure(filename, self.imie)
+            plot_label.setText('Spectral Flatness Measure')
+        if feature_name == 'SCF':
+            y = spectral_crest_factor(filename, self.imie)
+            plot_label.setText('Spectral Crest Factor')
 
         plot_label.setAlignment(QtCore.Qt.AlignCenter)
         plot_label.setFont(QFont('Arial', 12, weight=100))
 
         time = np.linspace(1, len(y), len(y))
-        sc = MplCanvas(self, width=4, height=3, dpi=100)
+        sc = MplCanvas(self, width=2, height=3, dpi=100)
 
         sc.axes.plot(time, y)
 
         toolbar = NavigationToolbar(sc, self)
-
-
 
         plot_toolbar_widget = QWidget()
         plot_toolbar_layout = QGridLayout()

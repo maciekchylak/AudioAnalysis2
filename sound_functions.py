@@ -155,6 +155,15 @@ def volume(filename, imie):
         output.append(math.sqrt(volume / len(frame)))
     return [(el - min(output)) / (max(output) - min(output)) for el in output]
 
+def energy_data(data):
+    output = 0
+    for el in data:
+        output += float(el) ** 2
+    return output
+
+def short_time_energy(filename, imie):
+    return [el ** 2 for el in volume(filename, imie)]
+
 def zero_crossing_rate(filename, imie):
     samplerate, data = read_wav(filename, imie)
     output = []

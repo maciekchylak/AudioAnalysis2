@@ -6,7 +6,7 @@ import numpy as np
 from scipy.io import wavfile
 
 ### Windows size
-SIZE: Final = 1000
+SIZE: Final = 2000
 LEN_OF_FRAME: Final = 0.02
 
 def flatten(t):
