@@ -192,8 +192,6 @@ class PlotMenu(QWidget):
         self.main_plot = QWidget()
         self.main_plot_layout = QGridLayout()
 
-        self.plot_generate()
-
         self.choose_file.activated.connect(self.generate_plots_statistics)
 
 
@@ -219,6 +217,9 @@ class PlotMenu(QWidget):
         self.slider_min.valueChanged.connect(self.updateLabel_min)
         self.slider_width.valueChanged.connect(self.updateLabel_width)
 
+        self.choose_window_time = QComboBox()
+        self.choose_window_time.addItems(['rectangle', 'hamming', 'hanning'])
+        self.choose_window_time.activated.connect(self.generate_plots_statistics)
 
         self.slider_min_l = QLabel('100', self)
         self.slider_min_l.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
@@ -226,10 +227,10 @@ class PlotMenu(QWidget):
         self.slider_width_l = QLabel('100', self)
         self.slider_width_l.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
-        self.slider_min_label = QLabel('Ustawienie f0 dla Band Energy')
+        self.slider_min_label = QLabel('Ustawienie f0 dla BE/SFM/SCF')
         self.slider_min_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
-        self.slider_width_label = QLabel('Ustawienie długości przedziału dla Band Energy')
+        self.slider_width_label = QLabel('Ustawienie długości przedziału dla BE/SFM/SCF')
         self.slider_width_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
 
@@ -244,6 +245,8 @@ class PlotMenu(QWidget):
 
         self.slider_widget.setLayout(self.slider_layer)
 
+        self.plot_generate()
+
         button_back = QPushButton('Back', self)
         button_back.clicked.connect(self.go_back)
         self.back_layout = QHBoxLayout()
@@ -254,6 +257,7 @@ class PlotMenu(QWidget):
         self.player = QMediaPlayer()
 
         self.back_layout.addWidget(self.choose_file)
+        self.back_layout.addWidget(self.choose_window_time)
         self.back_layout.addWidget(self.slider_widget)
         self.back_layout.addWidget(self.volume_up)
         self.back_layout.addWidget(self.music_play)
@@ -449,7 +453,16 @@ class PlotMenu(QWidget):
 
 
     def waveform(self, filename):
-        samplerate , data = read_wav_clip(filename, self.imie)
+
+        window = self.choose_window_time.currentText()
+        if window == 'hamming':
+            window_f = hamming
+        elif window == 'hanning':
+            window_f = hanning
+        elif window == 'rectangle':
+            window_f = identity
+
+        samplerate , data = read_wav_clip(filename, self.imie, window_f)
         length = len(data) / samplerate
         time = np.linspace(0, length, len(data))
         sc = MplCanvas(self, width=5, height=4, dpi=100)
