@@ -201,14 +201,14 @@ class PlotMenu(QWidget):
         self.slider_min = QSlider(Qt.Horizontal)
         self.slider_min.setMinimum(10)
         self.slider_min.setMaximum(3000)
-        self.slider_min.setValue(100)
+        self.slider_min.setValue(10)
         self.slider_min.setTickInterval(50)
         self.slider_min.setTickPosition(QSlider.TicksBelow)
 
         self.slider_width = QSlider(Qt.Horizontal)
         self.slider_width.setMinimum(10)
         self.slider_width.setMaximum(3000)
-        self.slider_width.setValue(100)
+        self.slider_width.setValue(3000)
         self.slider_width.setTickInterval(50)
         self.slider_width.setTickPosition(QSlider.TicksBelow)
 
@@ -221,10 +221,10 @@ class PlotMenu(QWidget):
         self.choose_window_time.addItems(['rectangle', 'hamming', 'hanning'])
         self.choose_window_time.activated.connect(self.generate_plots_statistics)
 
-        self.slider_min_l = QLabel('100', self)
+        self.slider_min_l = QLabel('10', self)
         self.slider_min_l.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
-        self.slider_width_l = QLabel('100', self)
+        self.slider_width_l = QLabel('3000', self)
         self.slider_width_l.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
         self.slider_min_label = QLabel('Ustawienie f0 dla BE/SFM/SCF')
@@ -534,9 +534,15 @@ class PlotMenu(QWidget):
                 window_f = hanning
             elif window == 'rectangle':
                 window_f = identity
+
             f, data, samplerate  = fourier_transformation(filename, self.imie, window_f)
-            time = f[int(self.slider_length_l.text())]
+
+            time = [i for i in range(3001) if i % 50 == 0]
             y = data[int(self.slider_length_l.text())]
+
+            ind = [idx for idx, element in enumerate(time) if element <= 3000 and element >= 0]
+            y = [y[i] for i in ind]
+
             plot_label.setText('Frequency plot')
         if feature_name != 'Frequency plot':
             time = np.linspace(1, len(y), len(y))

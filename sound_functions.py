@@ -89,7 +89,7 @@ def BE(filename, imie, f0, f1):
         s = 0
         for el in d_tmp:
             s += el ** 2
-        be.append(s / len(d_tmp))
+        be.append(s / (len(d_tmp) + 1))
     return be
 
 def BER(filename, imie, f0, f1):
